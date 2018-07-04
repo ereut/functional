@@ -35,6 +35,7 @@
 * parallel
 * [Spliterator](https://docs.oracle.com/javase/8/docs/api/index.html?java/util/Spliterator.html)
 * Внутреннее устройство: https://stackoverflow.com/questions/32936082/how-streams-pipeline-works-in-java-like-intpipeline
+* https://www.ibm.com/developerworks/library/j-java-streams-3-brian-goetz/index.html
 * https://stackoverflow.com/questions/30685623/how-to-implement-a-java-stream
 * https://codereview.stackexchange.com/questions/52050/spliterator-implementation
 * https://stackoverflow.com/questions/21163108/custom-thread-pool-in-java-8-parallel-stream
@@ -56,4 +57,5 @@
 * [Functional Programming Principles in Scala](https://www.coursera.org/learn/progfun1)
 * Функциональные библиотеки для Java:
 * https://github.com/xgrommx/awesome-functional-programming#java
+* https://habr.com/company/jugru/blog/307938/
 * https://habr.com/post/262139/
