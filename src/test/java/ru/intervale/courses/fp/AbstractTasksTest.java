@@ -41,9 +41,9 @@ public abstract class AbstractTasksTest {
 
     @Test
     public void fibonacci() throws Exception {
-        assertEquals(0, tasks.fibonacci(1));
-        assertEquals(1, tasks.fibonacci(2));
-        assertEquals(34, tasks.fibonacci(10));
+        assertEquals(0, tasks.fibonacci(0));
+        assertEquals(1, tasks.fibonacci(1));
+        assertEquals(34, tasks.fibonacci(9));
     }
 
     @Test
@@ -71,8 +71,8 @@ public abstract class AbstractTasksTest {
 
     @Test
     public void naturalSpecialSeqSliceProduct() throws Exception {
-        assertEquals(new BigInteger("75"), tasks.naturalSpecialSeqSliceProduct(11, 23) );
-        assertEquals(new BigInteger("25"), tasks.naturalSpecialSeqSliceProduct(0, 10));
+        assertEquals(new BigInteger("4"), tasks.naturalSpecialSeqSliceProduct(1, 2) );
+        assertEquals(new BigInteger("27"), tasks.naturalSpecialSeqSliceProduct(4, 6));
     }
 
     @Test
@@ -145,9 +145,9 @@ public abstract class AbstractTasksTest {
 
     @Test
     public void recaman() throws Exception {
-        assertEquals(41, tasks.recaman(23));
-        assertEquals(8, tasks.recaman(17));
-        assertEquals(0, tasks.recaman(1));
+        assertEquals(6, tasks.recaman(3));
+        assertEquals(2, tasks.recaman(4));
+        assertEquals(0, tasks.recaman(0));
     }
 
 }

@@ -14,6 +14,8 @@ import java.util.function.Function;
 import java.util.function.IntPredicate;
 import java.util.zip.CRC32;
 
+import static java.time.temporal.ChronoUnit.DAYS;
+
 /**
  * Реализации в императивном стиле
  */
@@ -46,19 +48,18 @@ public class ImperativeTasksImpl implements Tasks {
     @Override
     public long fibonacci(int n) {
 
-        if (n <= 1) {
+        if (n == 0) {
             return 0;
         }
 
         int a = 0;
         int b = 1;
 
-        for (int i = 2; i < n; i++) {
+        for (int i = 1; i < n; i++) {
             int next = a + b;
             a = b;
             b = next;
         }
-
         return b;
     }
 
@@ -77,7 +78,11 @@ public class ImperativeTasksImpl implements Tasks {
 
         long sumFileSize = 0;
         for (File file : files) {
-            sumFileSize += file.length();
+            if (file.isFile()) {
+                sumFileSize += file.length();
+            } else {
+                continue;
+            }
         }
         return sumFileSize / files.size();
     }
@@ -97,11 +102,21 @@ public class ImperativeTasksImpl implements Tasks {
     @Override
     public BigInteger naturalSpecialSeqSliceProduct(int m, int n) {
 
+        if (n < m) {
+            return BigInteger.ZERO;
+        }
+
+        List<Integer> seqList = new ArrayList<>();
         int sum = 0;
-        for (int i = m; i <= n; i++) {
+
+        for (int i = 0; seqList.size() < n; i++) {
             if (String.valueOf(i).matches("[13579]+")) {
-                sum += i;
+                seqList.add(i);
             }
+        }
+        seqList = seqList.subList(m - 1, n);
+        for (Integer num : seqList) {
+            sum += num;
         }
         return new BigInteger(String.valueOf(sum));
     }
@@ -160,7 +175,7 @@ public class ImperativeTasksImpl implements Tasks {
             sb.append(str);
             sb.append(delimiter);
         }
-        sb.deleteCharAt(sb.length() - 1);
+        sb.delete(sb.lastIndexOf(delimiter), sb.length());
         sb.append(suffix);
         return sb.toString();
     }
@@ -189,10 +204,10 @@ public class ImperativeTasksImpl implements Tasks {
         LocalDate startLocalDate = LocalDate.ofYearDay(yearSince, 1);
         LocalDate finishLocalDate =
                 LocalDate.ofYearDay(yearUntilInclusive, 1).with(TemporalAdjusters.lastDayOfYear());
-        LocalDate currentDate = startLocalDate;
+        long daysBetween = DAYS.between(startLocalDate, finishLocalDate);
 
-        while (currentDate.isBefore(finishLocalDate)) {
-            currentDate = currentDate.plusDays(1);
+        for (int i = 0; i <= daysBetween; i++) {
+            LocalDate currentDate = startLocalDate.plusDays(i);
             if (currentDate.getDayOfWeek() == DayOfWeek.MONDAY) {
                 Month currentMonth = currentDate.getMonth();
                 Long count = mondaysMap.get(currentMonth);
@@ -208,11 +223,11 @@ public class ImperativeTasksImpl implements Tasks {
         LocalDate startLocalDate = LocalDate.ofYearDay(yearFrom, 1);
         LocalDate finishLocalDate =
                 LocalDate.ofYearDay(yearUntilInclusive, 1).with(TemporalAdjusters.lastDayOfYear());
-        LocalDate currentDate = startLocalDate;
         List<LocalDate> friday13sList = new ArrayList<>();
+        long daysBetween = DAYS.between(startLocalDate, finishLocalDate);
 
-        while (currentDate.isBefore(finishLocalDate)) {
-            currentDate = currentDate.plusDays(1);
+        for (int i = 0; i <= daysBetween; i++) {
+            LocalDate currentDate = startLocalDate.plusDays(i);
             if (currentDate.getDayOfMonth() == 13 && currentDate.getDayOfWeek() == DayOfWeek.FRIDAY) {
                 friday13sList.add(currentDate);
             }
@@ -223,6 +238,7 @@ public class ImperativeTasksImpl implements Tasks {
             return yearsDifference != 0 ?
                     yearsDifference : o1.getMonth().name().compareTo(o2.getMonth().name());
         });
+
         return friday13sList;
     }
 
@@ -235,21 +251,15 @@ public class ImperativeTasksImpl implements Tasks {
                 try {
                     writer.write(str);
                     bytesSize += str.getBytes().length;
+                } catch (InterruptedIOException e) {
+                    bytesSize += e.bytesTransferred;
+                    break;
                 } catch (IOException e) {
                     break;
                 }
             }
         }
         return bytesSize;
-    }
-
-    private void readDirAndAddToSet(Set<File> set, File dir) {
-        for (File file : dir.listFiles()) {
-            if (file.isDirectory()) {
-                readDirAndAddToSet(set, file);
-            }
-            set.add(file);
-        }
     }
 
     @Override
@@ -259,17 +269,24 @@ public class ImperativeTasksImpl implements Tasks {
         Set<File> filesSet = new TreeSet<>(Comparator.comparing(File::getName));
 
         for (File file : dir.toFile().listFiles()) {
-            if (file.isDirectory()) {
-                readDirAndAddToSet(filesSet, file);
-            } else {
-                filesSet.add(file);
-            }
+           if (file.isFile()) {
+               filesSet.add(file);
+           } else {
+               continue;
+           }
         }
-
         for (File file : filesSet) {
             crc32.update(Files.readAllBytes(file.toPath()));
         }
         return crc32.getValue();
+    }
+
+    private String getRegexpFromMask(String mask) {
+
+        return mask
+                .replace(".", "\\.")
+                .replace("?", ".{1}")
+                .replace("*", ".*");
     }
 
     private void readDirAndPutInMap(Map<Path, Long> map, File dir, String mask) {
@@ -277,7 +294,7 @@ public class ImperativeTasksImpl implements Tasks {
             if (file.isDirectory()) {
                 readDirAndPutInMap(map, file, mask);
             }
-            if (file.getName().matches(mask)) {
+            if (file.getName().matches(getRegexpFromMask(mask))) {
                 map.put(file.toPath(), file.length());
             }
         }
@@ -296,11 +313,11 @@ public class ImperativeTasksImpl implements Tasks {
                     continue;
                 }
             } else {
-                System.out.println(file.getName());
-                if (file.getName().matches(mask)) {
+
+                if (file.getName().matches(getRegexpFromMask(mask))) {
                     map.put(file.toPath(), file.length());
                 }
-            }
+                }
             }
             return map;
     }
@@ -312,7 +329,7 @@ public class ImperativeTasksImpl implements Tasks {
         long count = 0;
         long element = 0;
 
-        for (long i = 1; i < n; i++) {
+        for (long i = 0; i < n; i++) {
             count++;
             if (element - count > 0 && !set.contains(element - count)) {
                 element -= count;
@@ -322,7 +339,6 @@ public class ImperativeTasksImpl implements Tasks {
                 set.add(element);
             }
         }
-        
         return element;
     }
 

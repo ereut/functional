@@ -4,6 +4,7 @@ import one.util.streamex.StreamEx;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.io.Writer;
 import java.math.BigInteger;
 import java.nio.file.Files;
@@ -46,15 +47,16 @@ public class FunctionalTasksImpl implements Tasks {
 
     @Override
     public long fibonacci(int n) {
-        return Stream.iterate(new long[] {0, 1}, f -> new long[] {f[1], f[0] + f[1]})
+        return Stream.iterate(new long[] {1, 1}, f -> new long[] {f[1], f[0] + f[1]})
                 .limit(n)
                 .reduce((a, b) -> b)
-                .get()[0];
+                .map(v -> v[0])
+                .orElse((long) 0);
     }
 
     @Override
     public double randomAverage(int n) {
-        return IntStream.generate(() -> new Random().nextInt())
+        return new Random().ints()
                 .limit(n)
                 .average()
                 .orElse(0);
@@ -63,6 +65,7 @@ public class FunctionalTasksImpl implements Tasks {
     @Override
     public double averageSize(List<File> files) {
         return files.stream()
+                .filter(File::isFile)
                 .mapToLong(File::length)
                 .average()
                 .orElse(0);
@@ -78,11 +81,13 @@ public class FunctionalTasksImpl implements Tasks {
 
     @Override
     public BigInteger naturalSpecialSeqSliceProduct(int m, int n) {
+
         return new BigInteger(String.valueOf(
-                IntStream.rangeClosed(m, n)
-                        .filter(num -> String.valueOf(num).matches("[13579]+"))
-                        .sum()
-        ));
+               IntStream.iterate(1, x -> x + 1)
+                .filter(num -> String.valueOf(num).matches("[13579]+"))
+                .limit(n)
+                .skip(m - 1)
+                .sum()));
 
     }
 
@@ -90,9 +95,8 @@ public class FunctionalTasksImpl implements Tasks {
     public <T> Function<T, T> fN(Function<T, T> f, int n) {
         return t -> Stream.iterate(f.apply(t), f::apply)
                 .limit(n)
-                .skip(n-1)
-                .findFirst()
-                .orElse(null);
+                .reduce((a, b) -> b)
+                .orElse(t);
     }
 
     @Override
@@ -150,7 +154,7 @@ public class FunctionalTasksImpl implements Tasks {
 
         return LongStream.rangeClosed(0, daysBetween)
                 .mapToObj(startLocalDate::plusDays)
-                .filter(day -> day.getDayOfWeek() == DayOfWeek.FRIDAY && day.getDayOfMonth() == 13)
+                .filter(day -> day.getDayOfMonth() == 13 && day.getDayOfWeek() == DayOfWeek.FRIDAY)
                 .sorted(Comparator.comparing(LocalDate::getYear)
                         .thenComparing(Comparator.comparing(o -> o.getMonth().name())))
                 .collect(Collectors.toList());
@@ -158,21 +162,24 @@ public class FunctionalTasksImpl implements Tasks {
 
     @Override
     public int writeAllCountingBytesTransferred(Writer writer, List<String> list) {
-        return list.stream()
+
+        List<String> filterList = list.stream()
                 .filter(str -> str.matches("^[a-zA-Z0-9]+$"))
-                .peek(str -> {
-                    try {
-                        writer.write(str);
-                    } catch (IOException e) {
-                        try {
-                            writer.close();
-                        } catch (IOException e1) {
-                            System.err.println("Writer closing error");
-                        }
-                    }
-                })
-                .mapToInt(str -> str.getBytes().length)
-                .reduce((v1, v2) -> v1 + v2).orElse(0);
+                .collect(Collectors.toList());
+        int bytes = 0;
+
+        for (String str : filterList) {
+            try {
+                writer.write(str);
+                bytes += str.getBytes().length;
+            } catch (InterruptedIOException e) {
+                bytes += e.bytesTransferred;
+                break;
+            } catch (IOException e) {
+                break;
+            }
+        }
+        return bytes;
     }
 
     @Override
@@ -180,7 +187,7 @@ public class FunctionalTasksImpl implements Tasks {
 
         CRC32 crc32 = new CRC32();
 
-        Files.walk(dir)
+        Files.walk(dir, 1)
                 .filter(Files::isRegularFile)
                 .sorted(Comparator.comparing(path -> path.toFile().getName()))
                 .forEach(file -> {
@@ -195,9 +202,13 @@ public class FunctionalTasksImpl implements Tasks {
 
     @Override
     public Map<Path, Long> fileSizes(Path dir, String mask, boolean recursive) throws IOException {
-        return Files.walk(dir, recursive ? Integer.MAX_VALUE : 0)
+
+        return Files.walk(dir, recursive ? Integer.MAX_VALUE : 1)
                 .filter(Files::isRegularFile)
-                .filter(path -> path.toFile().getName().matches(mask))
+                .filter(path -> path.toFile().getName().matches(mask
+                        .replace(".", "\\.")
+                        .replace("?", ".{1}")
+                        .replace("*", ".*")))
                 .collect(Collectors.toMap(
                         path -> (Path) path,
                         path -> path.toFile().length()
@@ -209,12 +220,13 @@ public class FunctionalTasksImpl implements Tasks {
 
         Set<Long> set = new HashSet<>();
 
-        return Stream.iterate(new long[] {0, 0}, f -> new long[] {f[0] + 1, f[1] - f[0] - 1 > 0
+        return Stream.iterate(new long[] {1, 1}, f -> new long[] {f[0] + 1, f[1] - f[0] - 1 > 0
                 && !set.contains(f[1] - f[0] - 1) ? f[1] - f[0] - 1 : f[1] + f[0] + 1})
-                .peek(f -> set.add(f[1]))
                 .limit(n)
+                .peek(f -> set.add(f[1]))
                 .reduce((a, b) -> b)
-                .get()[1];
+                .map(v -> v[1])
+                .orElse((long) 0);
     }
 
 }
