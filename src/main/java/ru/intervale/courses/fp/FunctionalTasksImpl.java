@@ -40,9 +40,9 @@ public class FunctionalTasksImpl implements Tasks {
 
         int len = Math.min(a.length, b.length);
         return IntStream.range(0, len)
-                .mapToDouble(i -> Math.sqrt(Math.pow(a[i], 2) + Math.pow(b[i], 2)))
-                .max()
-                .orElse(0);
+                .mapToObj(i -> Math.sqrt(Math.pow(a[i], 2) + Math.pow(b[i], 2)))
+                .max(Comparator.naturalOrder())
+                .orElse(null);
     }
 
     @Override
@@ -81,9 +81,8 @@ public class FunctionalTasksImpl implements Tasks {
 
     @Override
     public BigInteger naturalSpecialSeqSliceProduct(int m, int n) {
-
         return new BigInteger(String.valueOf(
-               IntStream.iterate(1, x -> x + 1)
+               LongStream.iterate(1, x -> x + 1)
                 .filter(num -> String.valueOf(num).matches("[13579]+"))
                 .limit(n)
                 .skip(m - 1)

@@ -3,6 +3,7 @@ package ru.intervale.courses.fp;
 import java.io.*;
 import java.math.BigInteger;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -38,11 +39,12 @@ public class ImperativeTasksImpl implements Tasks {
 
         for (int i = 0; i < len; i++) {
             double currentHyp = Math.sqrt(Math.pow(a[i], 2) + Math.pow(b[i], 2));
+
             if (currentHyp > maxHyp ) {
                 maxHyp = currentHyp;
             }
         }
-        return maxHyp;
+        return maxHyp == 0 ? null : maxHyp;
     }
 
     @Override
@@ -52,11 +54,11 @@ public class ImperativeTasksImpl implements Tasks {
             return 0;
         }
 
-        int a = 0;
-        int b = 1;
+        long a = 0;
+        long b = 1;
 
         for (int i = 1; i < n; i++) {
-            int next = a + b;
+            long next = a + b;
             a = b;
             b = next;
         }
@@ -66,25 +68,32 @@ public class ImperativeTasksImpl implements Tasks {
     @Override
     public double randomAverage(int n) {
 
-        int sum = 0;
+        double sum = 0;
         for (int i = 0; i < n; i++) {
             sum += new Random().nextInt();
         }
-        return (double) sum / n;
+        return n != 0 ? sum / n : 0;
     }
 
     @Override
     public double averageSize(List<File> files) {
 
-        long sumFileSize = 0;
+        if (files == null || files.isEmpty()) {
+            return 0;
+        }
+
+        int count = 0;
+
+        double sumFileSize = 0;
         for (File file : files) {
             if (file.isFile()) {
                 sumFileSize += file.length();
+                count++;
             } else {
                 continue;
             }
         }
-        return sumFileSize / files.size();
+        return sumFileSize / count;
     }
 
     @Override
@@ -106,16 +115,16 @@ public class ImperativeTasksImpl implements Tasks {
             return BigInteger.ZERO;
         }
 
-        List<Integer> seqList = new ArrayList<>();
-        int sum = 0;
+        List<Long> seqList = new ArrayList<>();
+        Long sum = (long) 0;
 
-        for (int i = 0; seqList.size() < n; i++) {
+        for (long i = 0; seqList.size() < n; i++) {
             if (String.valueOf(i).matches("[13579]+")) {
                 seqList.add(i);
             }
         }
         seqList = seqList.subList(m - 1, n);
-        for (Integer num : seqList) {
+        for (Long num : seqList) {
             sum += num;
         }
         return new BigInteger(String.valueOf(sum));
@@ -175,7 +184,9 @@ public class ImperativeTasksImpl implements Tasks {
             sb.append(str);
             sb.append(delimiter);
         }
-        sb.delete(sb.lastIndexOf(delimiter), sb.length());
+        if (!list.isEmpty()) {
+            sb.delete(sb.lastIndexOf(delimiter), sb.length());
+        }
         sb.append(suffix);
         return sb.toString();
     }
@@ -268,6 +279,10 @@ public class ImperativeTasksImpl implements Tasks {
         CRC32 crc32 = new CRC32();
         Set<File> filesSet = new TreeSet<>(Comparator.comparing(File::getName));
 
+        if (!Files.exists(dir)) {
+            throw new NoSuchFileException(dir.getFileName().toString());
+        }
+
         for (File file : dir.toFile().listFiles()) {
            if (file.isFile()) {
                filesSet.add(file);
@@ -293,9 +308,10 @@ public class ImperativeTasksImpl implements Tasks {
         for (File file : dir.listFiles()) {
             if (file.isDirectory()) {
                 readDirAndPutInMap(map, file, mask);
-            }
-            if (file.getName().matches(getRegexpFromMask(mask))) {
-                map.put(file.toPath(), file.length());
+            } else {
+                if (file.getName().matches(getRegexpFromMask(mask))) {
+                    map.put(file.toPath(), file.length());
+                }
             }
         }
     }
