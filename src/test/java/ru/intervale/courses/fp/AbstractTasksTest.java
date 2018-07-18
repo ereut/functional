@@ -138,9 +138,9 @@ public abstract class AbstractTasksTest {
     @Test
     public void fileSizes() throws Exception {
         assertTrue(tasks.fileSizes(Paths.get("src/main/java/ru/intervale/courses"),
-                "^[a-zA-Z.]+$", false).isEmpty());
+                "*", false).isEmpty());
         assertFalse(tasks.fileSizes(Paths.get("src/main/java/ru/intervale/courses"),
-                "^[a-zA-Z.]+$", true).isEmpty());
+                "*", true).isEmpty());
     }
 
     @Test
